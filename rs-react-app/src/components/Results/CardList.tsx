@@ -3,14 +3,14 @@ import Card from './Card';
 import type { Item } from '../../types';
 
 interface CardListProps {
-  items: Item[];
+  items?: Item[];
 }
 
 class CardList extends React.Component<CardListProps> {
   render() {
     const { items } = this.props;
     
-    if (!items.length) {
+    if (!items || items.length === 0) {
       return <p>No items found</p>;
     }
 
