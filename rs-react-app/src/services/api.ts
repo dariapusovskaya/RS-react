@@ -16,7 +16,12 @@ export async function fetchItems(searchTerm?: string): Promise<Item[]> {
 
     const products = data.products;
 
-    const items: Item[] = products.map((product: any) => ({
+    interface DummyJsonProduct {
+        id: number;
+        title: string;
+        description: string;
+}
+    const items: Item[] = products.map((product: DummyJsonProduct) => ({
         id: product.id,
         name: product.title,
         description: product.description

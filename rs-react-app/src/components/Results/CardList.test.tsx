@@ -24,6 +24,6 @@ describe('Cardlist Component', () => {
     });
 
     it('renders nothing when items is undefined', () => {
-        render(<CardList items={undefined as any} />);
+        render(<CardList items={undefined as never} />);
     });
 });
