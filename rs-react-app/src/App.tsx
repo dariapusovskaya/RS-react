@@ -5,6 +5,9 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import type { AppState } from './types';
 import { fetchItems } from './services/api';
 import Bomb from './components/Bomb/Bomb';
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 class App extends React.Component<{}, AppState & {explode: boolean} > {
   constructor(props: {}) {
