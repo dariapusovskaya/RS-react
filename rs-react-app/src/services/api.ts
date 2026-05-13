@@ -1,31 +1,75 @@
 import type { Item } from "../types";
 
-export async function fetchItems(searchTerm?: string): Promise<Item[]> {
+
+interface DummyJsonResponse {
+    products: {
+        id: number;
+        title: string;
+        description: string;
+    }[];
+    total: number;
+    skip: number;
+    limit: number;
+}
+
+interface FetchItemsParams {
+    searchTerm?: string;
+    page?: number;
+    limit?: number;
+}
+
+export async function fetchItems({ searchTerm, page = 1, limit = 10}: FetchItemsParams = {}): Promise<{ items: Item[]; total: number}> {
+    const skip = (page - 1) * limit;
 
     let url: string;
 
     if (searchTerm && searchTerm.trim() !== '') {
         url = `https://dummyjson.com/products/search?q=${encodeURIComponent(searchTerm)}`;
-    } else {
+        } else {
         url = `https://dummyjson.com/products?limit=30`;
-    }
+        };
 
-    const responce = await fetch(url);
+        const responce = await fetch(url);
+        const data: DummyJsonResponse = await responce.json();
 
-    const data =  await responce.json();
-
-    const products = data.products;
-
-    interface DummyJsonProduct {
-        id: number;
-        title: string;
-        description: string;
-}
-    const items: Item[] = products.map((product: DummyJsonProduct) => ({
+        const items: Item[] = data.products.map(product => ({
         id: product.id,
         name: product.title,
         description: product.description
-    }));
+        }));
 
-    return items;
+        return {
+            items,
+            total: data.total
+        };
 }
+
+// export async function fetchItems(searchTerm?: string): Promise<Item[]> {
+
+//     let url: string;
+
+//     if (searchTerm && searchTerm.trim() !== '') {
+//         url = `https://dummyjson.com/products/search?q=${encodeURIComponent(searchTerm)}`;
+//     } else {
+//         url = `https://dummyjson.com/products?limit=30`;
+//     }
+
+//     const responce = await fetch(url);
+
+//     const data =  await responce.json();
+
+//     const products = data.products;
+
+//     interface DummyJsonProduct {
+//         id: number;
+//         title: string;
+//         description: string;
+// }
+//     const items: Item[] = products.map((product: DummyJsonProduct) => ({
+//         id: product.id,
+//         name: product.title,
+//         description: product.description
+//     }));
+
+//     return items;
+// }
