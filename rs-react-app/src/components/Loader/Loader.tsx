@@ -1,14 +1,13 @@
 import React from 'react';
 
-class Loader extends React.Component {
-  render() {
-    return (
+
+const Loader = () => {
+  return(
       <div style={styles.container}>
         <div style={styles.spinner} />
         <p style={styles.text}>Loading...</p>
       </div>
-    );
-  }
+  );
 }
 
 const styles = {
