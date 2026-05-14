@@ -1,9 +1,17 @@
 import CardList from './CardList';
 import Loader from '../Loader/Loader';
-import type { ResultsProps } from '../../types';
+import type { Item, ResultsProps } from '../../types';
 
 
-const Results = ({ results, loading, error }: ResultsProps) => {
+interface ExtendedResultsProps {
+    results: Item[];
+    loading: boolean;
+    error: string | null;
+    onItemClick?: (id: number) => void;
+    selectedItemId?: string | null;
+}
+
+const Results = ({ results, loading, error, onItemClick, selectedItemId }: ExtendedResultsProps) => {
   if (loading) {
       return <Loader />;
   }
@@ -12,9 +20,13 @@ const Results = ({ results, loading, error }: ResultsProps) => {
       return <div style={{ color: 'red', padding: '20px' }}>{error}</div>;
   }
 
+  const items = Array.isArray(results) ? results : [];
+
   return (
       <div style={{ padding: '20px' }}>
-      <CardList items={results} />
+      <CardList items={items}
+                onItemClick={onItemClick}
+                selectedItemId={selectedItemId} />
       </div>
   );
 }
