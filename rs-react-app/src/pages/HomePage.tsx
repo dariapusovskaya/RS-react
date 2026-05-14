@@ -102,8 +102,6 @@ const HomePage = () => {
   }, [currentPage]);
 
 
-  console.log('Текущий путь:', window.location.pathname);
-console.log('Параметры:', searchParams.toString());
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ textAlign: 'center' }}>Search App</h1>
@@ -114,10 +112,6 @@ console.log('Параметры:', searchParams.toString());
         isLoading={loading}
       />
 
-      {/* 
-        НОВОЕ: MASTER-DETAIL VIEW 
-        Используем CSS Grid для создания двух колонок
-      */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: selectedItemId ? '1fr 1fr' : '1fr',
@@ -130,8 +124,8 @@ console.log('Параметры:', searchParams.toString());
             results={results}
             loading={loading}
             error={error}
-            onItemClick={handleItemClick}  // ← передаём обработчик
-            selectedItemId={selectedItemId} // ← передаём ID выбранного элемента
+            onItemClick={handleItemClick}
+            selectedItemId={selectedItemId}
           />
 
           {!loading && totalPages > 0 && (
