@@ -12,11 +12,12 @@ const App = () => {
     <ErrorBoundary>
       <Routes>
         <Route path="/" element={<RootLayout />}>
-          {/* HomePage рендерится на главной странице */}
-          <Route index element={<HomePage />} />
+         
+          <Route path='/' element={<HomePage />} >
           
           {/* Маршрут для деталей — отдельная страница */}
           <Route path="details/:itemId" element={<ItemDetails />} />
+          </Route>
           
           <Route path="about" element={<AboutPage />} />
           <Route path="*" element={<NotFoundPage />} />

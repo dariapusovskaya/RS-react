@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Outlet } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate, Outlet } from 'react-router-dom';
 import { Search } from '../components/Search/Search';
 import Pagination from '../components/Pagination/Pagination';
 import Results from '../components/Results/Results';
@@ -13,6 +13,8 @@ const ITEMS_PER_PAGE = 10;
 const HomePage = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const { itemId } = useParams<{ itemId?: string }>();
+  const navigate = useNavigate();
   
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,7 +27,7 @@ const HomePage = () => {
   const currentPage = parseInt(searchParams.get('page') || '1');
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  const selectedItemId = searchParams.get('details');
+  const selectedItemId = itemId || null;
 
   const performSearch = async (term: string, page: number) => {
     setLoading(true);
@@ -54,31 +56,26 @@ const HomePage = () => {
     setSearchTerm(trimmedTerm);
     localStorage.setItem('searchTerm', trimmedTerm);
 
-    setSearchParams({ page: '1' });
+    navigate(`/?page=1`);
     performSearch(trimmedTerm, 1);
   };
 
   const handlePageChange = (newPage: number) => {
 
-    const newParams: { page: string; details?: string } = { page: newPage.toString() };
     if (selectedItemId) {
-      newParams.details = selectedItemId;
-    }
-    setSearchParams(newParams);
+      navigate(`/details/${selectedItemId}?page=${newPage}`);
+    } else {
+      navigate(`/?page=${newPage}`);
+    } 
     performSearch(searchTerm, newPage);
   };
 
-  const handleItemClick = (itemId: number) => {
-    const newParams: { page: string; details: string } = {
-      page: currentPage.toString(),
-      details: itemId.toString() 
-    };
-    setSearchParams(newParams);
+  const handleItemClick = (id: number) => {
+    navigate(`/details/${id}?page=${currentPage}`);
   };
 
   const closeDetails = () => {
-    const newParams: { page: string } = { page: currentPage.toString() };
-    setSearchParams(newParams);
+    navigate(`/?page=${currentPage}`);
   };
 
   const triggerError = () => {
@@ -118,7 +115,7 @@ const HomePage = () => {
         gap: '24px',
         transition: 'all 0.3s ease'
       }}>
-        {/* Левая колонка — список результатов (Master) */}
+        {/* Левая колонка — список результатов */}
         <div>
           <Results 
             results={results}
