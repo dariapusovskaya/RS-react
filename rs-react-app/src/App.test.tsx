@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 import { fetchItems } from './services/api';
 
@@ -9,93 +10,141 @@ vi.mock('./services/api', () => ({
 }));
 
 describe('App component', () => {
-    const mockFetchItems = fetchItems as unknown as ReturnType<typeof vi.fn>;
+  const mockFetchItems = fetchItems as unknown as ReturnType<typeof vi.fn>;
 
-    beforeEach(() => {
-        mockFetchItems.mockClear();
-        localStorage.clear();
+  beforeEach(() => {
+    mockFetchItems.mockClear();
+    localStorage.clear();
+  });
+
+  it('makes initial API call on component mount', async () => {
+    mockFetchItems.mockResolvedValue([]);
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: '',
+        page: 1,
+        limit: 10
+      });
     });
+  });
 
-    it('makes initial API call on component mount',  async () => {
-        mockFetchItems.mockResolvedValue([
-            { id: 1, name: 'Item 1', description: 'Desc 1' }
-        ]);
+  it('handles search term from localStorage on initial load', async () => {
+    localStorage.setItem('searchTerm', 'saved term');
+    mockFetchItems.mockResolvedValue([]);
 
-        render(<App />);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
 
-        await waitFor(() => {
-            expect(mockFetchItems).toHaveBeenCalledWith('');
-        });
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: 'saved term',
+        page: 1,
+        limit: 10
+      });
     });
+  });
 
-    it('handles search term from localStorage on initial load', async () => {
-        localStorage.setItem('searchTerm', 'saved term');
-        mockFetchItems.mockResolvedValue([]);
-
-        render(<App />);
-
-        await waitFor(() => {
-            expect(mockFetchItems).toHaveBeenCalledWith('saved term');
-        });
-    });
-
-    it('calls API with correct parameters on search', async () => {
-        const user = userEvent.setup();
-        mockFetchItems.mockResolvedValue([]);
-        render(<App />);
-
-        mockFetchItems.mockClear();
-
-        const input = screen.getByTestId('search-input');
-        const button = screen.getByRole('button', { name: /search/i });
+  it('calls API with correct parameters on search', async () => {
+    const user = userEvent.setup();
+    mockFetchItems.mockResolvedValue([]);
     
-        await user.type(input, 'test search');
-        await user.click(button);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalled();
+    });
+
+    mockFetchItems.mockClear();
+
+    const input = screen.getByPlaceholderText(/search/i);
+    const button = screen.getByRole('button', { name: /search/i });
+
+    await user.type(input, 'test search');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: 'test search',
+        page: 1,
+        limit: 10
+      });
+    });
+  });
+
+  it('handles API error responses', async () => {
+    mockFetchItems.mockRejectedValue(new Error('API Error'));
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/cant upload the data/i)).toBeInTheDocument();
+    });
+  });
+
+  it('manages loading state during API calls', async () => {
+    mockFetchItems.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve([]), 100))
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /search/i });
+    expect(button).toBeDisabled();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('navigates to About page when clicking about link', async () => {
+    const user = userEvent.setup();
+    mockFetchItems.mockResolvedValue([]);
     
-        await waitFor(() => {
-        expect(mockFetchItems).toHaveBeenCalledWith('test search');
-        });
-    });
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
 
-    it('handles successful API responses', async () => {
-        const mockResults = [
-            { id: 1, name: 'Result 1', description: 'Desc 1' },
-            { id: 2, name: 'Result 2', description: 'Desc 2' }
-        ];
-        mockFetchItems.mockResolvedValue(mockResults);
+    const aboutLink = screen.getByRole('link', { name: /about/i });
+    await user.click(aboutLink);
 
-        render(<App />);
+    expect(screen.getByText(/About This App/i)).toBeInTheDocument();
+    expect(screen.getByText(/Author: dariapusovskaya/i)).toBeInTheDocument();
+  });
 
-        await waitFor(() => {
-            expect(screen.getByText('Result 1')).toBeInTheDocument();
-            expect(screen.getByText('Result 2')).toBeInTheDocument();
-        });
-    });
+  it('shows 404 page for unknown route', () => {
+    mockFetchItems.mockResolvedValue([]);
+    
+    render(
+      <MemoryRouter initialEntries={['/unknown-path']}>
+        <App />
+      </MemoryRouter>
+    );
 
-    it('handles API error responses', async () => {
-        mockFetchItems.mockRejectedValue(new Error('API Error'));
-
-        render(<App />);
-
-        await waitFor(() => {
-            expect(screen.getByText(/cant upload the data/i)).toBeInTheDocument();
-        });
-    });
-
-    it('manages loading state during API calls', async () => {
-        mockFetchItems.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve([]), 100))
-        );
-
-        render(<App />);
-
-        const button = screen.getByRole('button', { name: /search/i });
-
-        expect(screen.getByText(/Loading/i)).toBeInTheDocument();
-        expect(button).toBeDisabled();
-
-        await waitFor(() => {
-            expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
-        });
-    });
-})
+    expect(screen.getByText(/page not found/i)).toBeInTheDocument();
+  });
+});
