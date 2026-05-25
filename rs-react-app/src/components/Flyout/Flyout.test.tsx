@@ -1,12 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Flyout } from './Flyout';
 import { useSelectedItemsStore } from '../../store/useSelectedItemsStore';
 
-// Мокаем store
 vi.mock('../../store/useSelectedItemsStore', () => ({
   useSelectedItemsStore: vi.fn()
 }));
+
+const mockUseSelectedItemsStore = useSelectedItemsStore as unknown as ReturnType<typeof vi.fn>;
 
 describe('Flyout Component', () => {
   const mockItems = [
@@ -14,8 +16,12 @@ describe('Flyout Component', () => {
     { id: 2, name: 'Item 2', description: 'Desc 2' }
   ];
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should not render when no items selected', () => {
-    (useSelectedItemsStore as any).mockReturnValue({
+    mockUseSelectedItemsStore.mockReturnValue({
       getSelectedCount: () => 0,
       getSelectedIds: () => [],
       unselectAll: vi.fn()
@@ -26,7 +32,7 @@ describe('Flyout Component', () => {
   });
 
   it('should render when items are selected', () => {
-    (useSelectedItemsStore as any).mockReturnValue({
+    mockUseSelectedItemsStore.mockReturnValue({
       getSelectedCount: () => 2,
       getSelectedIds: () => [1, 2],
       unselectAll: vi.fn()
@@ -37,4 +43,43 @@ describe('Flyout Component', () => {
     expect(screen.getByText('Unselect all')).toBeInTheDocument();
     expect(screen.getByText('Download CSV')).toBeInTheDocument();
   });
+
+  it('should call unselectAll when Unselect all button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockUnselectAll = vi.fn();
+    
+    mockUseSelectedItemsStore.mockReturnValue({
+      getSelectedCount: () => 2,
+      getSelectedIds: () => [1, 2],
+      unselectAll: mockUnselectAll
+    });
+
+    render(<Flyout items={mockItems} />);
+    
+    const unselectButton = screen.getByText('Unselect all');
+    await user.click(unselectButton);
+    
+    expect(mockUnselectAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('should download CSV when Download CSV button is clicked', async () => {
+  const user = userEvent.setup();
+  
+  mockUseSelectedItemsStore.mockReturnValue({
+    getSelectedCount: () => 2,
+    getSelectedIds: () => [1, 2],
+    unselectAll: vi.fn()
+  });
+
+  globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+  globalThis.URL.revokeObjectURL = vi.fn();
+
+  render(<Flyout items={mockItems} />);
+  
+  const downloadButton = screen.getByText('Download CSV');
+  
+  await expect(user.click(downloadButton)).resolves.not.toThrow();
+  
+  expect(globalThis.URL.createObjectURL).toHaveBeenCalled();
+});
 });
