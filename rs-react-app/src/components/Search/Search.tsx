@@ -1,45 +1,34 @@
-import React from 'react';
-import type { SearchProps } from '../../types';
+import { useState, useEffect } from 'react';
 
-export class Search extends React.Component<SearchProps, { inputValue: string }> {
-    state = {
-        inputValue: this.props.searchTerm || '' 
-    }
-
-    handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        this.setState({ inputValue: value });
-    };
-
-    handleSearchClick = () => {
-        const trimmedValue = this.state.inputValue.trim();
-        this.props.onSearch(trimmedValue);
-    };
-
-    componentDidUpdate(prevProps: Readonly<SearchProps>) {
-        if (prevProps.searchTerm !== this.props.searchTerm) {
-            this.setState({inputValue: this.props.searchTerm || ''})
-        }
-    };
-
-    render() {
-        return (
-            <div style={{ display: 'flex', gap: '10px', padding: '20px' }}>
-                <input 
-                data-testid="search-input"
-                type="text"
-                value={this.state.inputValue}
-                onChange={this.handleInputChange}
-                placeholder="Search..."
-                style={{ flex: 1, padding: '8px' }}
-                />
-                <button
-                onClick={this.handleSearchClick} 
-                disabled={this.props.isLoading}
-                >
-                    Search
-                </button>
-            </div>
-        );
-    }
+interface SearchProps {
+  searchTerm: string;
+  onSearch: (term: string) => void;
+  isLoading?: boolean;
 }
+
+export const Search = ({ searchTerm, onSearch, isLoading }: SearchProps) => {
+  const [inputValue, setInputValue] = useState(searchTerm || '');
+
+  useEffect(() => {
+    setInputValue(searchTerm);
+  }, [searchTerm]);
+
+  const handleSearchClick = () => {
+    const trimmedValue = inputValue.trim();
+    onSearch(trimmedValue);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={handleSearchClick} disabled={isLoading}>
+        Search
+      </button>
+    </div>
+  );
+};
