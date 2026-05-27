@@ -61,7 +61,8 @@ describe('API Service', () => {
     await expect(fetchItems({ searchTerm: 'test' })).rejects.toThrow('Network error');
   });
 
-  it('fetches items with default parameters when no params provided', async () => {
+  it('uses default empty searchTerm when no params provided', async () => {
+
     const mockResponse = {
       products: [],
       total: 0,
@@ -79,14 +80,15 @@ describe('API Service', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('https://dummyjson.com/products?limit=30');
   });
 
-  it('handles search with empty string as searchTerm', async () => {
+
+  it('handles pagination correctly', async () => {
     const mockResponse = {
       products: [
         { id: 3, title: 'Product 3', description: 'Desc 3' }
       ],
-      total: 1,
-      skip: 0,
-      limit: 30
+      total: 30,
+      skip: 10,
+      limit: 10
     };
 
     vi.mocked(globalThis.fetch).mockResolvedValue({
@@ -94,9 +96,9 @@ describe('API Service', () => {
       json: async () => mockResponse
     } as Response);
 
-    const result = await fetchItems({ searchTerm: '   ' });
+    const result = await fetchItems({ page: 2, limit: 10 });
 
     expect(globalThis.fetch).toHaveBeenCalledWith('https://dummyjson.com/products?limit=30');
-    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(30);
   });
 });

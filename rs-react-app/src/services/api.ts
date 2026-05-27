@@ -43,3 +43,4 @@ export async function fetchItems({ searchTerm, page = 1, limit = 10}: FetchItems
             total: data.total
         };
 }
+

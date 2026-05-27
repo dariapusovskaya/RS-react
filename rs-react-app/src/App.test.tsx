@@ -10,7 +10,6 @@ vi.mock('./services/api', () => ({
   fetchItems: vi.fn()
 }));
 
-
 vi.mock('./context/ThemeContext', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="theme-provider">{children}</div>
@@ -50,107 +49,43 @@ describe('App Component', () => {
   });
 
   
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
-
-    expect(screen.getByTestId('theme-provider')).toBeInTheDocument();
-    expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
-  });
-
- 
-  it('renders RootLayout', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('About')).toBeInTheDocument();
-  });
-
- 
-  it('renders About page at /about route', async () => {
-    render(
-      <MemoryRouter initialEntries={['/about']}>
-        <App />
-      </MemoryRouter>
-    );
-
     await waitFor(() => {
-      expect(screen.getByText(/About This App/i)).toBeInTheDocument();
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: '',
+        page: 1,
+        limit: 10
+      });
     });
   });
 
+  it('handles search term from localStorage on initial load', async () => {
+    localStorage.setItem('searchTerm', 'saved term');
+    mockFetchItems.mockResolvedValue([]);
 
-  it('renders NotFound page for unknown routes', () => {
-    render(
-      <MemoryRouter initialEntries={['/unknown-route']}>
-        <App />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText(/Page Not Found/i)).toBeInTheDocument();
-  });
-
-
-  it('renders search on home page', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
-
-    expect(screen.getByPlaceholderText(/Search/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Search/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: 'saved term',
+        page: 1,
+        limit: 10
+      });
+    });
   });
 
-
-  it('navigates between pages', async () => {
+  it('calls API with correct parameters on search', async () => {
     const user = userEvent.setup();
+    mockFetchItems.mockResolvedValue([]);
     
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByPlaceholderText(/Search/i)).toBeInTheDocument();
-
-    const aboutLink = screen.getByText('About');
-    await user.click(aboutLink);
-
-    await waitFor(() => {
-      expect(screen.getByText(/About This App/i)).toBeInTheDocument();
-    });
-  });
-
-  it('navigates back to home', async () => {
-    const user = userEvent.setup();
-    
-    render(
-      <MemoryRouter initialEntries={['/about']}>
-        <App />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText(/About This App/i)).toBeInTheDocument();
-    });
-
-    const homeLink = screen.getByText('Home');
-    await user.click(homeLink);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search/i)).toBeInTheDocument();
-    });
-  });
-
-  it('fetches items on mount', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
@@ -160,25 +95,84 @@ describe('App Component', () => {
     await waitFor(() => {
       expect(mockFetchItems).toHaveBeenCalled();
     });
+
+    mockFetchItems.mockClear();
+
+    const input = screen.getByPlaceholderText(/search/i);
+    const button = screen.getByRole('button', { name: /search/i });
+
+    await user.type(input, 'test search');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(mockFetchItems).toHaveBeenCalledWith({
+        searchTerm: 'test search',
+        page: 1,
+        limit: 10
+      });
+    });
   });
 
-  it('is wrapped with ThemeProvider', () => {
+  it('handles API error responses', async () => {
+    mockFetchItems.mockRejectedValue(new Error('API Error'));
+
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId('theme-provider')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/cant upload the data/i)).toBeInTheDocument();
+    });
   });
 
-  it('is wrapped with ErrorBoundary', () => {
+  it('manages loading state during API calls', async () => {
+    mockFetchItems.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve([]), 100))
+    );
+
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId('error-boundary')).toBeInTheDocument();
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /search/i });
+    expect(button).toBeDisabled();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('navigates to About page when clicking about link', async () => {
+    const user = userEvent.setup();
+    mockFetchItems.mockResolvedValue([]);
+    
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    const aboutLink = screen.getByRole('link', { name: /about/i });
+    await user.click(aboutLink);
+
+    expect(screen.getByText(/About This App/i)).toBeInTheDocument();
+    expect(screen.getByText(/Author: dariapusovskaya/i)).toBeInTheDocument();
+  });
+
+  it('shows 404 page for unknown route', () => {
+    mockFetchItems.mockResolvedValue([]);
+    
+    render(
+      <MemoryRouter initialEntries={['/unknown-path']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/page not found/i)).toBeInTheDocument();
   });
 });
