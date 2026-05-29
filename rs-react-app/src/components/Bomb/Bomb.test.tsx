@@ -10,7 +10,6 @@ describe('Bomb component', () => {
   });
 
   it('throws an error with correct message when shouldExplode is true', () => {
-    // Подавляем ошибки React в консоли
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<Bomb shouldExplode={true} />)).toThrow('Bomb is explode');

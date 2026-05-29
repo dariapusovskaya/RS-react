@@ -62,6 +62,7 @@ describe('API Service', () => {
   });
 
   it('uses default empty searchTerm when no params provided', async () => {
+
     const mockResponse = {
       products: [],
       total: 0,
@@ -78,6 +79,7 @@ describe('API Service', () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith('https://dummyjson.com/products?limit=30');
   });
+
 
   it('handles pagination correctly', async () => {
     const mockResponse = {

@@ -5,10 +5,12 @@ import NotFoundPage from './pages/NotFoundPage';
 import { Routes, Route } from 'react-router-dom';
 import RootLayout from './layouts/RootLayout';
 import ItemDetails from './components/ItemDetails/ItemDetails';
+import { ThemeProvider } from './context/ThemeContext';
 
 
 const App = () => {
   return (
+    <ThemeProvider>
     <ErrorBoundary>
       <Routes>
         <Route path="/" element={<RootLayout />}>
@@ -24,6 +26,7 @@ const App = () => {
         </Route>
       </Routes>
     </ErrorBoundary>
+    </ThemeProvider>
   )
 }
  

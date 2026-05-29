@@ -5,27 +5,56 @@ import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 import { fetchItems } from './services/api';
 
+
 vi.mock('./services/api', () => ({
   fetchItems: vi.fn()
 }));
 
-describe('App component', () => {
+vi.mock('./context/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="theme-provider">{children}</div>
+  ),
+  useTheme: vi.fn(() => ({ theme: 'light', toggleTheme: vi.fn() }))
+}));
+
+
+vi.mock('./components/ErrorBoundary/ErrorBoundary', () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="error-boundary">{children}</div>
+  )
+}));
+
+
+vi.mock('./components/Flyout/Flyout', () => ({
+  Flyout: ({ items }: { items?: any[] }) => (
+    <div data-testid="flyout">Flyout: {items?.length ?? 0} items</div>
+  )
+}));
+
+
+vi.mock('./store/useSelectedItemsStore', () => ({
+  useSelectedItemsStore: vi.fn(() => ({
+    getSelectedCount: () => 0,
+    getSelectedIds: () => [],
+    unselectAll: vi.fn()
+  }))
+}));
+
+describe('App Component', () => {
   const mockFetchItems = fetchItems as unknown as ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockFetchItems.mockClear();
-    localStorage.clear();
+    mockFetchItems.mockResolvedValue([]);
   });
 
-  it('makes initial API call on component mount', async () => {
-    mockFetchItems.mockResolvedValue([]);
-
+  
+  it('renders without crashing', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
-
     await waitFor(() => {
       expect(mockFetchItems).toHaveBeenCalledWith({
         searchTerm: '',
@@ -44,7 +73,6 @@ describe('App component', () => {
         <App />
       </MemoryRouter>
     );
-
     await waitFor(() => {
       expect(mockFetchItems).toHaveBeenCalledWith({
         searchTerm: 'saved term',

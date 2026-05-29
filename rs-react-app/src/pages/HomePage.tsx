@@ -6,6 +6,7 @@ import Results from '../components/Results/Results';
 import Bomb from '../components/Bomb/Bomb';
 import { fetchItems } from '../services/api';
 import type { Item } from '../types';
+import { Flyout } from '../components/Flyout/Flyout';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -133,6 +134,7 @@ const HomePage = () => {
               isLoading={loading}
             />
           )}
+          <Flyout items={results} />
         </div>
 
         {/* Правая колонка — детали элемента (Detail) */}
