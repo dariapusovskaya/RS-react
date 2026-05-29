@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: 'dariapusovskaya-REACT2026Q2',
+  // base: 'dariapusovskaya-REACT2026Q2',
   test: {
     globals: true,
     environment: 'jsdom',
